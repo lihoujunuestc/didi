@@ -14,8 +14,8 @@ def count_y(df_line):
 
 
 def get_df_date(df_line):
-    df_value = df_line[1]
-    return df_value[:-2]
+    df_value = df_line[1].split('-')
+    return df_value[:-1]
 
 
 def get_df_time(df_line):
@@ -27,12 +27,21 @@ df_train = pd.read_csv(input_file, engine='python', encoding='utf-8', header=Non
 df_test = pd.read_csv(test_file, engine='python', encoding='utf-8', header=None, sep=' |\t')
 
 print df_train
-x_train = df_train.iloc[:, 4:]
+x_train_second = df_train.iloc[:, 4:]
 y_train = df_train.apply(count_y, axis=1)
 x_time = df_train.apply(get_df_time, axis=1)
 x_date = df_train.apply(get_df_date, axis=1)
-oed = preprocessing.OneHotEncoder()
-df_area_part = oed.fit_transform(df_train.iloc[:, 0])
+date_to_number_dict = dict((date_didi, i) for date_didi, i in enumerate(x_date.unique(), 1))
+x_date = x_date.map(lambda x: date_to_number_dict.get(x, x))
+first_value = df_train.iloc[:, 0]
+x_first_part = [[i, j, k] for i, j, k in zip(first_value, x_date, x_time)]
+
+enc = preprocessing.OneHotEncoder()
+x_enc_first_part = enc.fit_transform(x_first_part)
+df_x_first_part = pd.DataFrame(x_first_part, index=x_train_second.index)
+x_train = pd.concat(x_train_second, df_x_first_part, axis=1)
+
+
 lr = LinearRegression()
 lr.fit(x_train, y_train)
 
